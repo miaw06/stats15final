@@ -1,7 +1,49 @@
+library(dplyr)
+library(ggplot2)
+library(readr)
+uscrimedata <- read_csv("STATS 15/FINAL PROJECT/uscrimedata.csv")
+
+
+# Selects all rows up to "Property Crime" variable and removes rest
+# uscrimedata <- uscrimedata %>% 
+  # select(1:which(names(uscrimedata)=='Property Crime')) %>% 
+  # filter(if_all(everything() >= 0))
+
+# Removes unnecessary columns. Maybe what this code ^^ was trying to do?
+# I couldn't get that code to work properly.
+uscrimedata <- uscrimedata[, !(names(uscrimedata) %in% 
+                                 c("Agency_State", "Source.Link", "Source.Type",
+                                   "Source.Method", "FBI.Population.Covered", 
+                                   "Number.of.Agencies", "Latitude", 
+                                   "Longitude", "Comment", "Last Updated"))]
+
+# This is an alternative way to deal with rows with N/A values.
+# This just gets rid of them entirely
+uscrimedata <- uscrimedata %>% 
+  filter(!is.na(`Violent Crime`) & !is.na(`Property Crime`))
+
+# This gets rid of any rows with negative values.
+uscrimedata <- uscrimedata[rowSums(uscrimedata< 0) == 0,]
+
+# (Alternatively) To avoid getting N/A in the “Violent Crime” or 
+# “Property Crime” columns, you can create a new column that is the sum of what 
+# is considered violent crime and property crime and after this, you can get 
+# rid of the original “Violent Crime” and “Property Crime” columns.
+# This will help us avoid having to delete whole rows
+# just because they have N/A in that category.
+# uscrimedata <- uscrimedata %>% mutate("Total Violent Crime" = Murder + Rape + 
+#                                         Robbery + `Aggravated Assault`)
+#uscrimedata <- uscrimedata %>% mutate("Total Property Crime" = Burglary + 
+#                                        Theft + `Motor Vehicle Theft`)
+# However, in this case, we will be using the first method of getting rid rows
+# with N/A values entirely.
+
+
+# Moving on to organizing the states by region.
 names(uscrimedata$State)
 length(unique(uscrimedata$State))
 
-# There are 39 states used in this data
+# There are 39 states (including Nationwide) used in this data
 
 sum(uscrimedata$State)
 as.factor(uscrimedata$State)
@@ -21,11 +63,6 @@ table(uscrimedata$State)
 # NATIONWIDE ~> Nationwide (1)
 
 length(unique(uscrimedata$Agency))
-
-# "However, we would also be interested in categorizing our results by city, 
-# state, and region. For instance, we can group by different regions 
-# (Northeast, Southeast, Midwest, Southwest, and West) in the U.S. We can 
-# then make comparisons about violent and non violent crimes in each region."
 
 # Creates a data frame that matches states to their regions 
 # (there was probably a faster way to do this but it’s whatever)
@@ -47,20 +84,6 @@ uscrimedata <- uscrimedata %>% left_join(region_lookup, by = "State")
 # Although this does not show how many crimes each region has,
 # it can lead us to infer which region has the most crime.
 table(uscrimedata$Region)
-
-# To avoid getting N/A in the “Violent Crime” or “Property Crime” columns,
-# you can create a new column that is the sum of what is considered
-# violent crime and property crime and after this, you can get rid of the
-# original “Violent Crime” and “Property Crime” columns.
-# This will help us avoid having to delete whole rows
-# just because they have N/A in that category.
-
-uscrimedata <- uscrimedata %>% mutate("Total Violent Crime" = Murder + Rape + 
-                                        Robbery + `Aggravated Assault`)
-
-uscrimedata <- uscrimedata %>% mutate("Total Property Crime" = Burglary + 
-                                        Theft + `Motor Vehicle Theft`)
-
 
 # Inputting the code below will generate tables for each region showing the 
 # average amount of violent & property crime each year. There are 3 columns 
